@@ -29,8 +29,8 @@ struct WifiSettingMap
     WifiSettingMap()
     {
         m_map.insert(WifiConfig::None, WifiSetting());
-        m_map.insert(WifiConfig::AP, WifiSetting("Access Point", "127.0.0.1", 12345)); // TMP
-        m_map.insert(WifiConfig::STA, WifiSetting("Station", "127.0.0.2", 54321));     // TMP
+        m_map.insert(WifiConfig::AP, WifiSetting("Access Point", "192.168.1.56", 54321));
+        m_map.insert(WifiConfig::STA, WifiSetting("Station", "192.168.1.55", 12345));
     }
 };
 

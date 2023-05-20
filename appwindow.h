@@ -25,10 +25,14 @@ private:
     Ui::AppWindow *ui;
     Client *m_client;
     WifiSettingMap m_wifi_settings;
+    bool m_client_connected; // TODO: Add states instead
 
 private slots:
-    void tryToConnect();
+    void connexionButtonPushed();
     void wifiConfigChanged(int);
     void appendLog(QString);
+    void clientConnected();
+    void clientDisconnected();
+    void hidePassword(int);
 };
 #endif // appwindow_H

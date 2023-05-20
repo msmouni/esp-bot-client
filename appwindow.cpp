@@ -5,6 +5,7 @@ AppWindow::AppWindow(QWidget *parent)
     : QWidget(parent), ui(new Ui::AppWindow)
 {
     m_client = new Client(this);
+    m_client_connected = false;
 
     ui->setupUi(this);
 
@@ -17,9 +18,15 @@ AppWindow::AppWindow(QWidget *parent)
     ui->ipValIn->setEnabled(false);
     ui->portValIn->setEnabled(false);
 
-    connect(ui->connexionButton, SIGNAL(clicked()), this, SLOT(tryToConnect()));
+    ui->stackedWidget->setCurrentWidget(ui->connexionPage);
+
+    connect(ui->connexionButton, SIGNAL(clicked()), this, SLOT(connexionButtonPushed()));
     connect(ui->wifiConfigComboBox, SIGNAL(activated(int)), this, SLOT(wifiConfigChanged(int)));
+    connect(ui->hidePasswordCheckBox, SIGNAL(stateChanged(int)), this, SLOT(hidePassword(int)));
+
     connect(m_client, SIGNAL(appendLogSig(QString)), this, SLOT(appendLog(QString)));
+    connect(m_client, SIGNAL(connected()), this, SLOT(clientConnected()));
+    connect(m_client, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
 
     appendLog("Client Created");
 }
@@ -34,11 +41,62 @@ void AppWindow::appendLog(QString txt)
     ui->logText->append(txt);
 }
 
-void AppWindow::tryToConnect()
+void AppWindow::clientConnected()
+{
+    ui->connexionButton->setText("Disconnect");
+    m_client_connected = true;
+
+    // TODO: Move to a function
+    ui->loginValIn->clear();
+    ui->passwordValIn->clear();
+
+    ui->stackedWidget->setCurrentWidget(ui->authPage);
+}
+
+void AppWindow::clientDisconnected()
+{
+    ui->connexionButton->setText("Connect");
+    m_client_connected = false;
+
+    ui->stackedWidget->setCurrentWidget(ui->connexionPage);
+}
+
+void AppWindow::hidePassword(int state)
+{
+    Qt::CheckState check_state = (Qt::CheckState)state;
+    switch (check_state)
+    {
+    case Qt::CheckState::Checked:
+    {
+        ui->passwordValIn->setEchoMode(QLineEdit::EchoMode::Password);
+        break;
+    }
+    case Qt::CheckState::Unchecked:
+    {
+        ui->passwordValIn->setEchoMode(QLineEdit::EchoMode::Normal);
+        break;
+    }
+    default:
+    {
+        break;
+    }
+    }
+
+    //    ui->hidePasswordCheckBox->stateChanged()
+}
+
+void AppWindow::connexionButtonPushed()
 {
     if (m_client != nullptr)
     {
-        m_client->tryToConnect(ui->ipValIn->text(), ui->portValIn->value());
+        if (!m_client_connected)
+        {
+            m_client->tryToConnect(ui->ipValIn->text(), ui->portValIn->value());
+        }
+        else
+        {
+            m_client->disconnect();
+        }
     }
 }
 

@@ -15,9 +15,14 @@ void Client::tryToConnect(QString server_ip, quint16 server_port)
     m_socket->connectToHost(server_ip, server_port);
 }
 
+void Client::disconnect()
+{
+    m_socket->disconnectFromHost();
+}
+
 void Client::appendLog(QString txt)
 {
-    emit(appendLogSig("\nClient: " + txt));
+    emit appendLogSig("\nClient: " + txt);
 }
 
 void Client::dataReceived()
@@ -57,11 +62,13 @@ void Client::dataReceived()
 void Client::connectedToServer()
 {
     appendLog("Connected to server");
+    emit connected();
 }
 
 void Client::disconnectedFromServer()
 {
     appendLog("Disconnected from server");
+    emit disconnected();
 }
 
 void Client::socketError(QAbstractSocket::SocketError error)
