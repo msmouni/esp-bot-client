@@ -1,10 +1,16 @@
-#ifndef APPWINDOW_H
-#define APPWINDOW_H
+#ifndef appwindow_H
+#define appwindow_H
 
 #include <QWidget>
+#include <QMap>
+#include "client.h"
+#include "server.h"
 
 QT_BEGIN_NAMESPACE
-namespace Ui { class AppWindow; }
+namespace Ui
+{
+    class AppWindow;
+}
 QT_END_NAMESPACE
 
 class AppWindow : public QWidget
@@ -17,5 +23,12 @@ public:
 
 private:
     Ui::AppWindow *ui;
+    Client *m_client;
+    WifiSettingMap m_wifi_settings;
+
+private slots:
+    void tryToConnect();
+    void wifiConfigChanged(int);
+    void appendLog(QString);
 };
-#endif // APPWINDOW_H
+#endif // appwindow_H
