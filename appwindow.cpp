@@ -23,10 +23,11 @@ AppWindow::AppWindow(QWidget *parent)
     connect(ui->connexionButton, SIGNAL(clicked()), this, SLOT(connexionButtonPushed()));
     connect(ui->wifiConfigComboBox, SIGNAL(activated(int)), this, SLOT(wifiConfigChanged(int)));
     connect(ui->hidePasswordCheckBox, SIGNAL(stateChanged(int)), this, SLOT(hidePassword(int)));
+    connect(ui->loginButton, SIGNAL(clicked()), this, SLOT(authButtonPushed()));
 
     connect(m_client, SIGNAL(appendLogSig(QString)), this, SLOT(appendLog(QString)));
-    connect(m_client, SIGNAL(connected()), this, SLOT(clientConnected()));
-    connect(m_client, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
+    connect(m_client, SIGNAL(socketState(QAbstractSocket::SocketState)), this, SLOT(clientSocketSate(QAbstractSocket::SocketState)));
+    connect(m_client, SIGNAL(hasError()), this, SLOT(clientError()));
 
     appendLog("Client Created");
 }
@@ -36,29 +37,53 @@ AppWindow::~AppWindow()
     delete ui;
 }
 
-void AppWindow::appendLog(QString txt)
-{
-    ui->logText->append(txt);
-}
-
-void AppWindow::clientConnected()
-{
-    ui->connexionButton->setText("Disconnect");
-    m_client_connected = true;
-
-    // TODO: Move to a function
-    ui->loginValIn->clear();
-    ui->passwordValIn->clear();
-
-    ui->stackedWidget->setCurrentWidget(ui->authPage);
-}
-
-void AppWindow::clientDisconnected()
+void AppWindow::connexionInit()
 {
     ui->connexionButton->setText("Connect");
+    ui->connexionButton->setEnabled(true);
     m_client_connected = false;
 
     ui->stackedWidget->setCurrentWidget(ui->connexionPage);
+}
+
+void AppWindow::appendLog(QString txt)
+{
+    ui->logText->append("-[" + QTime::currentTime().toString() + "] " + txt + "\n");
+}
+
+void AppWindow::clientSocketSate(QAbstractSocket::SocketState socket_state)
+{
+    switch (socket_state){
+    case QAbstractSocket::UnconnectedState:{
+        connexionInit();
+        break;
+    }
+    case QAbstractSocket::ConnectingState:{
+        ui->connexionButton->setEnabled(false);
+        break;
+    }
+    case QAbstractSocket::ConnectedState:{
+        ui->connexionButton->setText("Disconnect");
+        ui->connexionButton->setEnabled(true);
+        m_client_connected = true;
+
+        // TODO: Move to a function
+        ui->loginValIn->clear();
+        ui->passwordValIn->clear();
+
+        ui->stackedWidget->setCurrentWidget(ui->authPage);
+        break;
+    }
+    default:{
+        break;
+    }
+    }
+}
+
+
+void AppWindow::clientError()
+{
+    connexionInit();
 }
 
 void AppWindow::hidePassword(int state)
@@ -83,6 +108,14 @@ void AppWindow::hidePassword(int state)
     }
 
     //    ui->hidePasswordCheckBox->stateChanged()
+}
+
+void AppWindow::authButtonPushed()
+{
+    if (m_client != nullptr)
+    {
+        m_client->sendAuthenfification(ui->loginValIn->text(), ui->passwordValIn->text());
+    }
 }
 
 void AppWindow::connexionButtonPushed()

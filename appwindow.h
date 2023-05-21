@@ -3,8 +3,11 @@
 
 #include <QWidget>
 #include <QMap>
+#include <QTime>
 #include "client.h"
 #include "server.h"
+
+// TODO: Move all member which are not related to GUI to another class
 
 QT_BEGIN_NAMESPACE
 namespace Ui
@@ -26,13 +29,15 @@ private:
     Client *m_client;
     WifiSettingMap m_wifi_settings;
     bool m_client_connected; // TODO: Add states instead
+    void connexionInit();
 
 private slots:
     void connexionButtonPushed();
     void wifiConfigChanged(int);
     void appendLog(QString);
-    void clientConnected();
-    void clientDisconnected();
+    void clientSocketSate(QAbstractSocket::SocketState);
+    void clientError();
     void hidePassword(int);
+    void authButtonPushed();
 };
 #endif // appwindow_H

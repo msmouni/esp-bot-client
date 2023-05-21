@@ -19,6 +19,7 @@ set(PROJECT_SOURCES
         client.cpp
         client.h
         server.h
+        frame.h
         appwindow.ui
 )
 
