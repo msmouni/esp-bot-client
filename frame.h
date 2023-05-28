@@ -31,6 +31,7 @@ public:
 
     void fromBytes(QByteArray bytes_frame)
     {
+        //        qDebug()<<"size"<<bytes_frame.size()<<"bytes"<<bytes_frame;
         // Endianness ...
         m_id = static_cast<ServerFrameId>((uint32_t(bytes_frame[0]) << 24) | (uint32_t(bytes_frame[1]) << 16) | (uint32_t(bytes_frame[2]) << 8) | (uint32_t(bytes_frame[3])));
 
@@ -68,21 +69,21 @@ public:
 
     void debug()
     {
-        printf("ID: %ld\nLEN: %d\nData: [", static_cast<uint32_t>(m_id), m_len);
+        qDebug("ID: %ld\nLEN: %d\nData: [", static_cast<uint32_t>(m_id), m_len);
 
         for (uint8_t i = 0; i < m_len; i++)
         {
             if (i == m_len - 1)
             {
-                printf("%d", m_data[i]);
+                qDebug("%d", m_data[i]);
             }
             else
             {
-                printf("%d ,", m_data[i]);
+                qDebug("%d ,", m_data[i]);
             }
         }
 
-        printf("]\n");
+        qDebug("]\n");
     }
 
     ServerFrameId &getId()
@@ -147,6 +148,46 @@ struct AuthFrameData
 
         bytes.remove(1, MAX_LOGIN_PASS_LEN);
         bytes.insert(1, m_login_password);
+
+        return bytes;
+    }
+};
+
+///////////////////////////////:
+
+enum class AuthentificationType : uint8_t
+{
+    Undefined,
+    AsClient,
+    AsSuperClient,
+};
+
+// To complete later
+struct StatusFrameData
+{
+    AuthentificationType m_auth_type;
+
+    StatusFrameData()
+    {
+        m_auth_type = AuthentificationType::Undefined;
+    }
+
+    StatusFrameData(QByteArray bytes)
+    {
+        m_auth_type = static_cast<AuthentificationType>(bytes[0]);
+
+        // bytes++;
+    }
+
+    StatusFrameData(AuthentificationType auth_type)
+    {
+        m_auth_type = auth_type;
+    }
+
+    QByteArray toBytes()
+    {
+        QByteArray bytes;
+        bytes.append((uint8_t)m_auth_type);
 
         return bytes;
     }

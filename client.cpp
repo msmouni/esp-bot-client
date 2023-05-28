@@ -5,11 +5,17 @@ Client::Client(QObject *parent)
 {
     m_state = ClientState::Disconneted;
     m_socket = new QTcpSocket(this);
+    m_update_timer.setInterval(100); // 100 ms
+
+    connect(&m_update_timer, SIGNAL(timeout()) ,this , SLOT(update()));
+
     connect(m_socket, SIGNAL(connected()), this, SLOT(connectedToServer()));
     connect(m_socket, SIGNAL(readyRead()), this, SLOT(dataReceived()));
     connect(m_socket, SIGNAL(disconnected()), this, SLOT(disconnectedFromServer()));
     connect(m_socket, SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this, SLOT(socketError(QAbstractSocket::SocketError)));
     connect(m_socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(socketStateChanged(QAbstractSocket::SocketState)));
+
+    m_update_timer.start();
 }
 
 void Client::tryToConnect(QString server_ip, quint16 server_port)
@@ -50,7 +56,8 @@ void Client::processFrame(ServerFrame<MAX_MSG_SIZE> frame)
     }
     case ServerFrameId::Status:
     {
-
+        // Store Status using a watchdog
+        m_status_data.set(StatusFrameData(frame.getData()));
         break;
     }
     case ServerFrameId::Debug:
@@ -69,15 +76,9 @@ void Client::dataReceived()
 {
     appendLog("Received data"); // TMP
 
-    QDataStream socket_in(m_socket);
+    QByteArray bytes = m_socket->readAll();
 
-    char bytes[MAX_MSG_SIZE];
-
-    socket_in.readRawData(bytes, MAX_MSG_SIZE); // m_socket->bytesAvailable());
-
-//    ServerFrame<MAX_MSG_SIZE> frame = ServerFrame<MAX_MSG_SIZE>(bytes);
-
-//    frame.debug();
+    processFrame(ServerFrame<MAX_MSG_SIZE>(bytes));
 
     /*
     QDataStream in(socket);
@@ -168,6 +169,33 @@ void Client::socketError(QAbstractSocket::SocketError error)
     appendLog("Socket ERREUR : " + m_socket->errorString());
 }
 
+void Client::update()
+{
+    qDebug()<<"update";
+
+    Option<StatusFrameData> opt_status_data = m_status_data.get();
+    if (opt_status_data.isSome()){
+        StatusFrameData status_data = opt_status_data.getData();
+
+        uint8_t auth_type=(uint8_t) status_data.m_auth_type;
+        qDebug()<< auth_type;
+
+        // TO COMPLETE
+//        switch (status_data.m_auth_type){
+//        case AuthentificationType::AsClient :{
+//            break;
+//        }
+//        case AuthentificationType::AsSuperClient :{
+//            break;
+//        }
+//        default:{
+//            break;
+//        }
+//        }
+    }
+
+}
+
 void Client::sendAuthenfification(QString login, QString password)
 {
     QString login_data = "{" + login + ":" + password + "}\0";
@@ -176,8 +204,8 @@ void Client::sendAuthenfification(QString login, QString password)
 
     QByteArray frame = ServerFrame<MAX_MSG_SIZE>(ServerFrameId::Authentification, auth_frame.size(), auth_frame).toBytes();
 
-//    // TMP
-//    qDebug() << frame;
+    //    // TMP
+    //    qDebug() << frame;
 
     sendFrame(frame);
 }
