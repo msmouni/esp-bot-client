@@ -5,9 +5,12 @@
 #include <QtNetwork>
 #include "frame.h"
 
-enum class ClientState{
+enum class ClientState
+{
     Init,
     Connected,
+    AuthAsSuperCLient,
+    AuthAsCLient,
     Disconneted,
 };
 
@@ -28,6 +31,7 @@ private:
     ClientState m_state;
     QTcpSocket *m_socket;
     void appendLog(QString);
+    void processFrame(ServerFrame<MAX_MSG_SIZE>);
 
 private slots:
     void dataReceived();

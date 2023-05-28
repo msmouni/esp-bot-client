@@ -53,16 +53,20 @@ void AppWindow::appendLog(QString txt)
 
 void AppWindow::clientSocketSate(QAbstractSocket::SocketState socket_state)
 {
-    switch (socket_state){
-    case QAbstractSocket::UnconnectedState:{
+    switch (socket_state)
+    {
+    case QAbstractSocket::UnconnectedState:
+    {
         connexionInit();
         break;
     }
-    case QAbstractSocket::ConnectingState:{
+    case QAbstractSocket::ConnectingState:
+    {
         ui->connexionButton->setEnabled(false);
         break;
     }
-    case QAbstractSocket::ConnectedState:{
+    case QAbstractSocket::ConnectedState:
+    {
         ui->connexionButton->setText("Disconnect");
         ui->connexionButton->setEnabled(true);
         m_client_connected = true;
@@ -74,12 +78,12 @@ void AppWindow::clientSocketSate(QAbstractSocket::SocketState socket_state)
         ui->stackedWidget->setCurrentWidget(ui->authPage);
         break;
     }
-    default:{
+    default:
+    {
         break;
     }
     }
 }
-
 
 void AppWindow::clientError()
 {
