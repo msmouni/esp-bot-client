@@ -5,15 +5,8 @@
 #include <QtNetwork>
 #include "frame.h"
 #include "watchdog.h"
-
-enum class ClientState
-{
-    Init,
-    Connected,
-    AuthAsSuperCLient,
-    AuthAsCLient,
-    Disconneted,
-};
+#include "client_state.h"
+#include "status.h"
 
 const uint32_t SERVER_STATUS_TIMEOUT_MS = 250; // 2.5 * STATUS_FRAME_PERIOD
 
@@ -28,15 +21,17 @@ public:
     void tryToConnect(QString server_ip, quint16 server_port);
     void disconnect();
     void sendFrame(QByteArray);
-    void sendAuthenfification(QString, QString);
+    void tryLogIn(QString, QString);
+    void logout();
 
 private:
-    ClientState m_state;
+    ClientStateHandler m_state_handler;
     QTcpSocket *m_socket;
     WatchDog<StatusFrameData> m_status_data = WatchDog<StatusFrameData>(SERVER_STATUS_TIMEOUT_MS);
     QTimer m_update_timer;
     void appendLog(QString);
     void processFrame(ServerFrame<MAX_MSG_SIZE>);
+    void updateState();
 
 private slots:
     void dataReceived();
@@ -48,6 +43,7 @@ signals:
     void appendLogSig(QString);
     void socketState(QAbstractSocket::SocketState);
     void hasError();
+    void updateStatus(Status);
 };
 
 #endif // CLIENT_H

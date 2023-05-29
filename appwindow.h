@@ -6,6 +6,7 @@
 #include <QTime>
 #include "client.h"
 #include "server.h"
+#include "status.h"
 
 // TODO: Move all member which are not related to GUI to another class
 
@@ -28,8 +29,10 @@ private:
     Ui::AppWindow *ui;
     Client *m_client;
     WifiSettingMap m_wifi_settings;
-    bool m_client_connected; // TODO: Add states instead
+    bool m_client_connected;       // TODO: Add states instead
+    bool m_client_authentificated; // TODO: Add states instead
     void connexionInit();
+    void updateState(Status);
 
 private slots:
     void connexionButtonPushed();
@@ -39,5 +42,6 @@ private slots:
     void clientError();
     void hidePassword(int);
     void authButtonPushed();
+    void updateStatus(Status);
 };
 #endif // appwindow_H

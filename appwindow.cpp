@@ -28,6 +28,7 @@ AppWindow::AppWindow(QWidget *parent)
     connect(m_client, SIGNAL(appendLogSig(QString)), this, SLOT(appendLog(QString)));
     connect(m_client, SIGNAL(socketState(QAbstractSocket::SocketState)), this, SLOT(clientSocketSate(QAbstractSocket::SocketState)));
     connect(m_client, SIGNAL(hasError()), this, SLOT(clientError()));
+    connect(m_client, SIGNAL(updateStatus(Status)), this, SLOT(updateStatus(Status)));
 
     appendLog("Client Created");
 }
@@ -44,6 +45,28 @@ void AppWindow::connexionInit()
     m_client_connected = false;
 
     ui->stackedWidget->setCurrentWidget(ui->connexionPage);
+}
+
+void AppWindow::updateState(Status status)
+{
+    if (status.m_client_state == ClientState::AuthAsCLient || status.m_client_state == ClientState::AuthAsSuperCLient)
+    {
+        m_client_authentificated = true;
+
+        ui->loginValIn->setEnabled(false);
+        ui->passwordValIn->setEnabled(false);
+        ui->hidePasswordCheckBox->setEnabled(false);
+        ui->loginButton->setText("Log Out");
+    }
+    else
+    {
+        m_client_authentificated = false;
+
+        ui->loginValIn->setEnabled(true);
+        ui->passwordValIn->setEnabled(true);
+        ui->hidePasswordCheckBox->setEnabled(true);
+        ui->loginButton->setText("Log In");
+    }
 }
 
 void AppWindow::appendLog(QString txt)
@@ -118,8 +141,20 @@ void AppWindow::authButtonPushed()
 {
     if (m_client != nullptr)
     {
-        m_client->sendAuthenfification(ui->loginValIn->text(), ui->passwordValIn->text());
+        if (m_client_authentificated)
+        {
+            m_client->logout();
+        }
+        else
+        {
+            m_client->tryLogIn(ui->loginValIn->text(), ui->passwordValIn->text());
+        }
     }
+}
+
+void AppWindow::updateStatus(Status status)
+{
+    updateState(status);
 }
 
 void AppWindow::connexionButtonPushed()

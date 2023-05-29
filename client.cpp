@@ -3,11 +3,11 @@
 Client::Client(QObject *parent)
     : QObject{parent}
 {
-    m_state = ClientState::Disconneted;
+    m_state_handler.set(ClientState::Disconneted);
     m_socket = new QTcpSocket(this);
     m_update_timer.setInterval(100); // 100 ms
 
-    connect(&m_update_timer, SIGNAL(timeout()) ,this , SLOT(update()));
+    connect(&m_update_timer, SIGNAL(timeout()), this, SLOT(update()));
 
     connect(m_socket, SIGNAL(connected()), this, SLOT(connectedToServer()));
     connect(m_socket, SIGNAL(readyRead()), this, SLOT(dataReceived()));
@@ -72,6 +72,42 @@ void Client::processFrame(ServerFrame<MAX_MSG_SIZE> frame)
     }
 }
 
+void Client::updateState()
+{
+    Option<StatusFrameData> opt_status_data = m_status_data.get();
+
+    if (opt_status_data.isSome())
+    {
+        StatusFrameData status_data = opt_status_data.getData();
+
+        //        uint8_t auth_type=(uint8_t) status_data.m_auth_type;
+        //        qDebug()<< auth_type;
+
+        switch (status_data.m_auth_type)
+        {
+        case AuthentificationType::AsClient:
+        {
+            m_state_handler.set(ClientState::AuthAsSuperCLient);
+            break;
+        }
+        case AuthentificationType::AsSuperClient:
+        {
+            m_state_handler.set(ClientState::AuthAsCLient);
+            break;
+        }
+        default:
+        {
+            m_state_handler.set(ClientState::Connected);
+            break;
+        }
+        }
+    }
+    else
+    {
+        m_state_handler.set(ClientState::Connected);
+    }
+}
+
 void Client::dataReceived()
 {
     appendLog("Received data"); // TMP
@@ -121,7 +157,7 @@ void Client::socketStateChanged(QAbstractSocket::SocketState state)
     case QAbstractSocket::UnconnectedState:
     {
         appendLog("The socket is not connected.");
-        m_state = ClientState::Disconneted;
+        m_state_handler.set(ClientState::Disconneted);
         break;
     }
     case QAbstractSocket::HostLookupState:
@@ -137,7 +173,7 @@ void Client::socketStateChanged(QAbstractSocket::SocketState state)
     case QAbstractSocket::ConnectedState:
     {
         appendLog("A connection is established.");
-        m_state = ClientState::Connected;
+        m_state_handler.set(ClientState::Connected);
         break;
     }
     case QAbstractSocket::BoundState:
@@ -148,7 +184,7 @@ void Client::socketStateChanged(QAbstractSocket::SocketState state)
     case QAbstractSocket::ClosingState:
     {
         appendLog("The socket is about to close (data may still be waiting to be written).");
-        m_state = ClientState::Disconneted;
+        m_state_handler.set(ClientState::Disconneted);
         break;
     }
     case QAbstractSocket::ListeningState:
@@ -171,36 +207,30 @@ void Client::socketError(QAbstractSocket::SocketError error)
 
 void Client::update()
 {
-    qDebug()<<"update";
+    //    qDebug()<<"update";
 
-    Option<StatusFrameData> opt_status_data = m_status_data.get();
-    if (opt_status_data.isSome()){
-        StatusFrameData status_data = opt_status_data.getData();
+    updateState();
 
-        uint8_t auth_type=(uint8_t) status_data.m_auth_type;
-        qDebug()<< auth_type;
-
-        // TO COMPLETE
-//        switch (status_data.m_auth_type){
-//        case AuthentificationType::AsClient :{
-//            break;
-//        }
-//        case AuthentificationType::AsSuperClient :{
-//            break;
-//        }
-//        default:{
-//            break;
-//        }
-//        }
-    }
-
+    emit updateStatus(Status(m_state_handler.get()));
 }
 
-void Client::sendAuthenfification(QString login, QString password)
+void Client::tryLogIn(QString login, QString password)
 {
     QString login_data = "{" + login + ":" + password + "}\0";
 
     QByteArray auth_frame = AuthFrameData(AuthentificationRequest::LogIn, login_data.toUtf8()).toBytes();
+
+    QByteArray frame = ServerFrame<MAX_MSG_SIZE>(ServerFrameId::Authentification, auth_frame.size(), auth_frame).toBytes();
+
+    //    // TMP
+    //    qDebug() << frame;
+
+    sendFrame(frame);
+}
+
+void Client::logout()
+{
+    QByteArray auth_frame = AuthFrameData(AuthentificationRequest::LogOut, QByteArray()).toBytes();
 
     QByteArray frame = ServerFrame<MAX_MSG_SIZE>(ServerFrameId::Authentification, auth_frame.size(), auth_frame).toBytes();
 

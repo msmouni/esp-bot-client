@@ -18,12 +18,14 @@ set(PROJECT_SOURCES
         appwindow.h
         client.cpp
         client.h
+        client_state.h
         server.h
         frame.cpp
         frame.h
         watchdog.cpp
         watchdog.h
         option.h
+        status.h
         appwindow.ui
 )
 
