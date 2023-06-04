@@ -26,8 +26,13 @@ set(PROJECT_SOURCES
         watchdog.h
         option.h
         status.h
+        picviewer.cpp
+        picviewer.h
         appwindow.ui
 )
+
+# https://stackoverflow.com/questions/18471827/qtcreator-cant-find-the-class-header-file-after-promoting-a-widget-to-that-clas
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(esp-bot-client

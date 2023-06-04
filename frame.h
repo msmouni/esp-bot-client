@@ -12,21 +12,24 @@ enum class ServerFrameId : uint32_t
 {
     Authentification = 0x01,
     Status = 0x02,
+    CamPic = 0x03,
     Debug = 0xFF,
 };
 
-// ServerFrame as uint8_t frame[Length]: [uint8_t ID[4], uint8_t FRAME_LENGTH, uint8_t DATA[DATA_LEN]]
-template <uint8_t MaxFrameLen>
+// ServerFrame as uint8_t frame[Length]: [uint8_t ID[4], uint8_t FRAME_LENGTH[2], uint8_t FRAME_NUMBER, uint8_t DATA[DATA_LEN]]
+template <uint16_t MaxFrameLen>
 class ServerFrame
 {
 private:
     ServerFrameId m_id;
-    uint8_t m_len;
+    uint16_t m_len;
+    uint8_t m_number; // Decreasing number (0 means last Frame)
     QByteArray m_data;
 
 public:
     ServerFrame(){};
-    ServerFrame(ServerFrameId id, uint8_t len, QByteArray data) : m_id(id), m_len(len), m_data(data){};
+    ServerFrame(ServerFrameId id, uint16_t len, uint8_t number, QByteArray data) : m_id(id), m_len(len), m_number(number), m_data(data){};
+    ServerFrame(ServerFrameId id, uint16_t len, QByteArray data) : m_id(id), m_len(len), m_number(0), m_data(data){};
     ~ServerFrame(){};
 
     void fromBytes(QByteArray bytes_frame)
@@ -35,9 +38,12 @@ public:
         // Endianness ...
         m_id = static_cast<ServerFrameId>((uint32_t(bytes_frame[0]) << 24) | (uint32_t(bytes_frame[1]) << 16) | (uint32_t(bytes_frame[2]) << 8) | (uint32_t(bytes_frame[3])));
 
-        m_len = std::min((uint8_t)bytes_frame[4], MaxFrameLen);
+        uint16_t frame_len = ((uint16_t)(bytes_frame[4]) << 8) | (uint16_t)(bytes_frame[5]);
+        m_len = std::min(frame_len, (uint16_t)(MaxFrameLen - 7));
 
-        m_data = bytes_frame.sliced(5, m_len);
+        m_number = bytes_frame[6];
+
+        m_data = bytes_frame.sliced(7, m_len);
     }
 
     ServerFrame(QByteArray bytes_frame)
@@ -59,17 +65,20 @@ public:
         buffer[2] = static_cast<uint8_t>(id_uint32 >> 8);
         buffer[3] = static_cast<uint8_t>(id_uint32);
 
-        buffer[4] = m_len;
+        buffer[4] = static_cast<uint8_t>(m_len >> 8);
+        buffer[5] = static_cast<uint8_t>(m_len);
 
-        buffer.remove(5, m_data.length());
-        buffer.insert(5, m_data);
+        buffer[6] = m_number;
+
+        buffer.remove(7, m_data.length());
+        buffer.insert(7, m_data);
 
         return buffer;
     }
 
     void debug()
     {
-        qDebug("ID: %ld\nLEN: %d\nData: [", static_cast<uint32_t>(m_id), m_len);
+        qDebug("ID: %ld\nLEN: %d\nNumber: %d\nData: [", static_cast<uint32_t>(m_id), m_len, m_number);
 
         for (uint8_t i = 0; i < m_len; i++)
         {
@@ -91,9 +100,14 @@ public:
         return m_id;
     }
 
-    uint8_t getLen()
+    uint16_t getLen()
     {
         return m_len;
+    }
+
+    uint8_t getNumber()
+    {
+        return m_number;
     }
 
     QByteArray getData()
