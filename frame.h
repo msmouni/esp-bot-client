@@ -122,8 +122,8 @@ struct AuthFrameData
 
         // Note: https://stackoverflow.com/questions/26456813/will-a-char-array-differ-in-ordering-in-a-little-endian-or-big-endian-system
         // Copy
-        uint8_t login_pass_len = std::min(bytes.size() - 1,
-                                          (qsizetype)MAX_LOGIN_PASS_LEN);
+        uint8_t login_pass_len = std::min(bytes.size() + 1,
+                                          (qsizetype)MAX_LOGIN_PASS_LEN); // +1 for '\0'
         memcpy(m_login_password, bytes.sliced(1, login_pass_len), login_pass_len);
     }
 
@@ -132,8 +132,8 @@ struct AuthFrameData
         m_auth_type = auth_type;
 
         // Copy
-        uint8_t login_pass_len = std::min(login_password.size(),
-                                          (qsizetype)MAX_LOGIN_PASS_LEN);
+        uint8_t login_pass_len = std::min(login_password.size() + 1,
+                                          (qsizetype)MAX_LOGIN_PASS_LEN); // +1 for '\0'
         memcpy(m_login_password, login_password, login_pass_len); // MAX_LOGIN_PASS_LEN);//
     }
 

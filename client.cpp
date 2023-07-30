@@ -4,34 +4,64 @@ Client::Client(QObject *parent)
     : QObject{parent}
 {
     m_state_handler.set(ClientState::Disconneted);
-    m_socket = new QTcpSocket(this);
+    m_tcp_socket = new QTcpSocket(this);
+    m_udp_socket = new QUdpSocket(this);
     m_update_timer.setInterval(100); // 100 ms
+
+    qDebug() << "1"
+             << "Addr:" << m_tcp_socket->localAddress() << "|Port:" << m_tcp_socket->localPort();
+
+    /*
+    try this on m_tcp_socket(at creation/ after connecting...) -> store @ and port to use the same for UDP
+    QHostAddress 	localAddress() const
+    quint16 	localPort() const
+    */
+
+    /*
+    // https://doc.qt.io/qt-6/qudpsocket.html
+    void Server::initSocket()
+    {
+        udpSocket = new QUdpSocket(this);
+        udpSocket->bind(QHostAddress::LocalHost, 7755);
+
+        connect(udpSocket, &QUdpSocket::readyRead,
+                this, &Server::readPendingDatagrams);
+    }
+
+    void Server::readPendingDatagrams()
+    {
+        while (udpSocket->hasPendingDatagrams()) {
+            QNetworkDatagram datagram = udpSocket->receiveDatagram();
+            processTheDatagram(datagram);
+        }
+    }
+    */
 
     connect(&m_update_timer, SIGNAL(timeout()), this, SLOT(update()));
 
-    connect(m_socket, SIGNAL(connected()), this, SLOT(connectedToServer()));
-    connect(m_socket, SIGNAL(readyRead()), this, SLOT(dataReceived()));
-    connect(m_socket, SIGNAL(disconnected()), this, SLOT(disconnectedFromServer()));
-    connect(m_socket, SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this, SLOT(socketError(QAbstractSocket::SocketError)));
-    connect(m_socket, SIGNAL(stateChanged(QAbstractSocket::SocketState)), this, SLOT(socketStateChanged(QAbstractSocket::SocketState)));
+    connect(m_tcp_socket, &QTcpSocket::readyRead, this, &Client::streamDataReceived);
+    connect(m_tcp_socket, &QTcpSocket::errorOccurred, this, &Client::socketError);
+    connect(m_tcp_socket, &QTcpSocket::stateChanged, this, &Client::socketStateChanged);
+
+    connect(m_udp_socket, &QUdpSocket::readyRead, this, &Client::readPendingDatagrams);
 
     m_update_timer.start();
 }
 
 void Client::tryToConnect(QString server_ip, quint16 server_port)
 {
-    m_socket->connectToHost(server_ip, server_port);
+    m_tcp_socket->connectToHost(server_ip, server_port);
 }
 
 void Client::disconnect()
 {
-    m_socket->disconnectFromHost();
+    m_tcp_socket->disconnectFromHost();
 }
 
 void Client::sendFrame(QByteArray frame)
 {
-    m_socket->write(frame);
-    //    m_socket->waitForBytesWritten()
+    m_tcp_socket->write(frame);
+    //    m_tcp_socket->waitForBytesWritten()
 }
 
 void Client::appendLog(QString txt)
@@ -72,6 +102,16 @@ void Client::processFrame(ServerFrame<MAX_MSG_SIZE> frame)
     }
 }
 
+bool Client::isConnected()
+{
+    return m_state_handler.isConnected();
+}
+
+bool Client::isAuthentificated()
+{
+    return m_state_handler.isAuthentificated();
+}
+
 void Client::updateState()
 {
     Option<StatusFrameData> opt_status_data = m_status_data.get();
@@ -102,17 +142,17 @@ void Client::updateState()
         }
         }
     }
-    else
+    else if (isAuthentificated())
     {
         m_state_handler.set(ClientState::Connected);
     }
 }
 
-void Client::dataReceived()
+void Client::streamDataReceived()
 {
     appendLog("Received data"); // TMP
 
-    QByteArray bytes = m_socket->readAll();
+    QByteArray bytes = m_tcp_socket->readAll();
 
     processFrame(ServerFrame<MAX_MSG_SIZE>(bytes));
 
@@ -172,6 +212,10 @@ void Client::socketStateChanged(QAbstractSocket::SocketState state)
     }
     case QAbstractSocket::ConnectedState:
     {
+        qDebug() << "2"
+                 << "Addr:" << m_tcp_socket->localAddress() << "|Port:" << m_tcp_socket->localPort();
+
+        m_udp_socket->bind(m_tcp_socket->localAddress() ,m_tcp_socket->localPort());
         appendLog("A connection is established.");
         m_state_handler.set(ClientState::Connected);
         break;
@@ -202,7 +246,21 @@ void Client::socketStateChanged(QAbstractSocket::SocketState state)
 void Client::socketError(QAbstractSocket::SocketError error)
 {
     emit hasError();
-    appendLog("Socket ERREUR : " + m_socket->errorString());
+    appendLog("Socket ERREUR : " + m_tcp_socket->errorString());
+}
+
+void Client::readPendingDatagrams()
+{
+    while (m_udp_socket->hasPendingDatagrams()) {
+        QNetworkDatagram datagram = m_udp_socket->receiveDatagram();
+//        processTheDatagram(datagram);
+        qDebug()<< datagram.data();
+        ServerFrame<MAX_MSG_SIZE> frame=ServerFrame<MAX_MSG_SIZE>(datagram.data());
+        frame.debug();
+        processFrame(frame);
+    }
+
+
 }
 
 void Client::update()
@@ -218,7 +276,15 @@ void Client::tryLogIn(QString login, QString password)
 {
     QString login_data = "{" + login + ":" + password + "}\0";
 
+    //    qDebug() << login_data;
+
+    //    QByteArray login_data_bytes = login_data.toUtf8();//.constData(); // TO test: The QByteArray returned by the toUtf8() function is a temporary object
+    ////    qDebug() << login_data_bytes;
+    //    QByteArray auth_frame = AuthFrameData(AuthentificationRequest::LogIn, login_data_bytes).toBytes();
+
     QByteArray auth_frame = AuthFrameData(AuthentificationRequest::LogIn, login_data.toUtf8()).toBytes();
+
+    //    qDebug() << auth_frame;
 
     QByteArray frame = ServerFrame<MAX_MSG_SIZE>(ServerFrameId::Authentification, auth_frame.size(), auth_frame).toBytes();
 

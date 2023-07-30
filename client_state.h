@@ -31,6 +31,14 @@ struct ClientStateHandler
 
         return m_state;
     };
+
+    bool isConnected(){
+        return (m_state==ClientState::Connected || m_state==ClientState::AuthAsCLient || m_state==ClientState::AuthAsSuperCLient);
+    }
+
+    bool isAuthentificated(){
+        return (m_state==ClientState::AuthAsCLient || m_state==ClientState::AuthAsSuperCLient);
+    }
 };
 
 #endif // CLIENT_STATE_H

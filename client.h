@@ -26,17 +26,21 @@ public:
 
 private:
     ClientStateHandler m_state_handler;
-    QTcpSocket *m_socket;
+    QTcpSocket *m_tcp_socket;
+    QUdpSocket *m_udp_socket;
     WatchDog<StatusFrameData> m_status_data = WatchDog<StatusFrameData>(SERVER_STATUS_TIMEOUT_MS);
     QTimer m_update_timer;
     void appendLog(QString);
-    void processFrame(ServerFrame<MAX_MSG_SIZE>);
     void updateState();
+    bool isConnected();
+    bool isAuthentificated();
+    void processFrame(ServerFrame<MAX_MSG_SIZE>);
 
 private slots:
-    void dataReceived();
+    void streamDataReceived();
     void socketStateChanged(QAbstractSocket::SocketState);
     void socketError(QAbstractSocket::SocketError);
+    void readPendingDatagrams();
     void update();
 
 signals:
