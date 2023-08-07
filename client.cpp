@@ -6,7 +6,7 @@ Client::Client(QObject *parent)
     m_state_handler.set(ClientState::Disconneted);
     m_tcp_socket = new QTcpSocket(this);
     m_udp_socket = new QUdpSocket(this);
-    m_update_timer.setInterval(100); // 100 ms
+    m_update_timer.setInterval(50); // 50 ms
 
     qDebug() << "1"
              << "Addr:" << m_tcp_socket->localAddress() << "|Port:" << m_tcp_socket->localPort();
