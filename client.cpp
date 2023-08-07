@@ -94,7 +94,20 @@ void Client::processFrame(ServerFrame<MAX_MSG_SIZE> frame)
     }
     case ServerFrameId::CamPic:
     {
-        emit setImage(QImage::fromData(frame.getData()));
+        QImage img=QImage::fromData(frame.getData());
+        qDebug()<<"CamPic"<< "IMG:"<<img.size();
+        emit setImage(img);
+        /*m_cam_pic_buff.append(frame.getData());
+
+
+        if (m_cam_pic_buff.size()==MAX_MSG_SIZE){
+            QImage img=QImage::fromData(m_cam_pic_buff);
+            qDebug()<<"CamPic"<< "IMG:"<<img.size();
+            emit setImage(img);
+
+            m_cam_pic_buff.clear();
+        }*/
+
 
         /*qDebug()<<"Nb:"<<frame.getNumber();
         if (m_cam_pic_nb_tracking==0){
@@ -265,7 +278,7 @@ void Client::socketStateChanged(QAbstractSocket::SocketState state)
         qDebug() << "2"
                  << "Addr:" << m_tcp_socket->localAddress() << "|Port:" << m_tcp_socket->localPort();
 
-        m_udp_socket->bind(m_tcp_socket->localAddress() ,m_tcp_socket->localPort());
+        m_udp_socket->bind(m_tcp_socket->localAddress(), m_tcp_socket->localPort());
         appendLog("A connection is established.");
         m_state_handler.set(ClientState::Connected);
         break;
@@ -301,16 +314,23 @@ void Client::socketError(QAbstractSocket::SocketError error)
 
 void Client::readPendingDatagrams()
 {
-    while (m_udp_socket->hasPendingDatagrams()) {
+    while (m_udp_socket->hasPendingDatagrams())
+    {
         QNetworkDatagram datagram = m_udp_socket->receiveDatagram();
-//        processTheDatagram(datagram);
-        qDebug()<< datagram.data();
-        ServerFrame<MAX_MSG_SIZE> frame=ServerFrame<MAX_MSG_SIZE>(datagram.data());
-        frame.debug();
-        processFrame(frame);
+        //        processTheDatagram(datagram);
+        // qDebug()<< datagram.data();
+        QByteArray bytes= datagram.data();
+        //        qDebug()<<"Recv data:"<<bytes.size();
+        m_cam_pic_buff.append(bytes);
+
+
+        if (m_cam_pic_buff.size()==MAX_MSG_SIZE){
+            ServerFrame<MAX_MSG_SIZE> frame = ServerFrame<MAX_MSG_SIZE>(bytes);
+            // frame.debug();
+            processFrame(frame);
+        }
+
     }
-
-
 }
 
 void Client::update()

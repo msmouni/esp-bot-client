@@ -1,7 +1,6 @@
 #include "appwindow.h"
 #include "./ui_appwindow.h"
 
-
 AppWindow::AppWindow(QWidget *parent)
     : QWidget(parent), ui(new Ui::AppWindow)
 {
@@ -162,6 +161,8 @@ void AppWindow::updateStatus(Status status)
 
 void AppWindow::setImage(QImage image)
 {
+    qDebug() << "setImage:"<<image.size();
+
     ui->picView->setImage(image);
 }
 

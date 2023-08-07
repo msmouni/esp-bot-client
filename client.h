@@ -31,7 +31,7 @@ private:
     QUdpSocket *m_udp_socket;
     WatchDog<StatusFrameData> m_status_data = WatchDog<StatusFrameData>(SERVER_STATUS_TIMEOUT_MS);
     QTimer m_update_timer;
-    // QByteArray m_cam_pic_buff;
+    QByteArray m_cam_pic_buff;
     // uint8_t m_cam_pic_nb_tracking;
     QImage m_image; // TMP
     void appendLog(QString);
