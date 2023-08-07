@@ -7,21 +7,30 @@
 
 // From ESP32-ROBOT project: To ADJUST LATER
 
+// Frame definition
+const uint32_t FRAME_ID_OFFSET = 0;
+const uint32_t FRAME_LEN_OFFSET = 4;
+const uint32_t FRAME_HEADER_LEN = 6;
+const uint32_t FRAME_DATA_OFFSET = FRAME_HEADER_LEN;
+
 // To Maybe adjust later : 32bits ...
 enum class ServerFrameId : uint32_t
 {
+    NotDefined = 0x00,
     Authentification = 0x01,
     Status = 0x02,
+    CamPic = 0x03,
     Debug = 0xFF,
+    Unknown = UINT32_MAX,
 };
 
 // ServerFrame as uint8_t frame[Length]: [uint8_t ID[4], uint8_t FRAME_LENGTH, uint8_t DATA[DATA_LEN]]
-template <uint8_t MaxFrameLen>
+template <uint16_t MaxFrameLen>
 class ServerFrame
 {
 private:
     ServerFrameId m_id;
-    uint8_t m_len;
+    uint16_t m_len;
     QByteArray m_data;
 
 public:
@@ -35,7 +44,8 @@ public:
         // Endianness ...
         m_id = static_cast<ServerFrameId>((uint32_t(bytes_frame[0]) << 24) | (uint32_t(bytes_frame[1]) << 16) | (uint32_t(bytes_frame[2]) << 8) | (uint32_t(bytes_frame[3])));
 
-        m_len = std::min((uint8_t)bytes_frame[4], MaxFrameLen);
+        uint16_t len = (uint32_t(bytes_frame[4]) << 8) | uint32_t(bytes_frame[5]);
+        m_len = std::min(len, MaxFrameLen);
 
         m_data = bytes_frame.sliced(5, m_len);
     }
@@ -59,10 +69,11 @@ public:
         buffer[2] = static_cast<uint8_t>(id_uint32 >> 8);
         buffer[3] = static_cast<uint8_t>(id_uint32);
 
-        buffer[4] = m_len;
+        buffer[4] = static_cast<uint8_t>(m_len >> 8);
+        buffer[5] = static_cast<uint8_t>(m_len);
 
-        buffer.remove(5, m_data.length());
-        buffer.insert(5, m_data);
+        buffer.remove(6, m_data.length());
+        buffer.insert(6, m_data);
 
         return buffer;
     }
@@ -91,7 +102,7 @@ public:
         return m_id;
     }
 
-    uint8_t getLen()
+    uint16_t getLen()
     {
         return m_len;
     }
@@ -134,7 +145,7 @@ struct AuthFrameData
         // Copy
         uint8_t login_pass_len = std::min(login_password.size() + 1,
                                           (qsizetype)MAX_LOGIN_PASS_LEN); // +1 for '\0'
-        memcpy(m_login_password, login_password, login_pass_len); // MAX_LOGIN_PASS_LEN);//
+        memcpy(m_login_password, login_password, login_pass_len);         // MAX_LOGIN_PASS_LEN);//
     }
 
     QByteArray toBytes()

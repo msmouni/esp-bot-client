@@ -1,6 +1,7 @@
 #include "appwindow.h"
 #include "./ui_appwindow.h"
 
+
 AppWindow::AppWindow(QWidget *parent)
     : QWidget(parent), ui(new Ui::AppWindow)
 {
@@ -8,6 +9,7 @@ AppWindow::AppWindow(QWidget *parent)
     m_client_connected = false;
 
     ui->setupUi(this);
+    ui->picView->setScene(&scene);
 
     for (auto iter = m_wifi_settings.m_map.begin(); iter != m_wifi_settings.m_map.end(); ++iter)
     {
@@ -29,6 +31,7 @@ AppWindow::AppWindow(QWidget *parent)
     connect(m_client, SIGNAL(socketState(QAbstractSocket::SocketState)), this, SLOT(clientSocketSate(QAbstractSocket::SocketState)));
     connect(m_client, SIGNAL(hasError()), this, SLOT(clientError()));
     connect(m_client, SIGNAL(updateStatus(Status)), this, SLOT(updateStatus(Status)));
+    connect(m_client, SIGNAL(setImage(QImage)), this, SLOT(setImage(QImage)));
 
     appendLog("Client Created");
 }
@@ -155,6 +158,11 @@ void AppWindow::authButtonPushed()
 void AppWindow::updateStatus(Status status)
 {
     updateState(status);
+}
+
+void AppWindow::setImage(QImage image)
+{
+    ui->picView->setImage(image);
 }
 
 void AppWindow::connexionButtonPushed()

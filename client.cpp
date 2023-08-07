@@ -37,6 +37,8 @@ Client::Client(QObject *parent)
     }
     */
 
+    // m_cam_pic_nb_tracking = 0;
+
     connect(&m_update_timer, SIGNAL(timeout()), this, SLOT(update()));
 
     connect(m_tcp_socket, &QTcpSocket::readyRead, this, &Client::streamDataReceived);
@@ -88,6 +90,36 @@ void Client::processFrame(ServerFrame<MAX_MSG_SIZE> frame)
     {
         // Store Status using a watchdog
         m_status_data.set(StatusFrameData(frame.getData()));
+        break;
+    }
+    case ServerFrameId::CamPic:
+    {
+        emit setImage(QImage::fromData(frame.getData()));
+
+        /*qDebug()<<"Nb:"<<frame.getNumber();
+        if (m_cam_pic_nb_tracking==0){
+            m_cam_pic_nb_tracking=frame.getNumber();
+        }else {
+            m_cam_pic_nb_tracking-=1;
+        }
+
+        if (m_cam_pic_nb_tracking ==frame.getNumber()){
+            m_cam_pic_buff.append(frame.getData());
+            if (frame.getNumber()==0){
+                // QImage::loadFromData()
+//                m_image= QImage::fromData(m_cam_pic_buff);
+                emit setImage(QImage::fromData(m_cam_pic_buff));
+
+
+                m_cam_pic_buff.clear();
+                m_cam_pic_nb_tracking=0;
+                qDebug()<<"Image recved";
+            }
+        }else {
+            m_cam_pic_buff.clear();
+            m_cam_pic_nb_tracking=0;
+        }*/
+
         break;
     }
     case ServerFrameId::Debug:
@@ -155,6 +187,24 @@ void Client::streamDataReceived()
     QByteArray bytes = m_tcp_socket->readAll();
 
     processFrame(ServerFrame<MAX_MSG_SIZE>(bytes));
+
+    // https://stackoverflow.com/questions/35419786/stop-tcp-packets-from-concatenating
+
+    /*while (!bytes.isEmpty())
+    {
+        if (bytes.length() < MAX_MSG_SIZE)
+        {
+            bytes.resize(MAX_MSG_SIZE);
+        }
+        //        qDebug()<<"4"<<"size"<<bytes.size()<<"length"<< bytes.length()<<"| frame_pos"<<frame_pos <<"slice_size"<<MAX_MSG_SIZE;
+        ServerFrame<MAX_MSG_SIZE> frame = ServerFrame<MAX_MSG_SIZE>(bytes.sliced(0, MAX_MSG_SIZE));
+        //        frame.debug();
+        processFrame(frame);
+
+        bytes.remove(0, MAX_MSG_SIZE);
+
+        //        frame_pos+=MAX_MSG_SIZE;
+    }*/
 
     /*
     QDataStream in(socket);
