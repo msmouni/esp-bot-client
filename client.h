@@ -17,7 +17,7 @@ class Client : public QObject
 public:
     explicit Client(QObject *parent = nullptr);
 
-    static const int MAX_MSG_SIZE = 4096; // TMP // 128; // 8192;//128; // To adjust later reg Msgs to send
+    static const uint8_t MAX_MSG_SIZE = 128;// 4096; // TMP // 128; // 8192;//128; // To adjust later reg Msgs to send
 
     void tryToConnect(QString server_ip, quint16 server_port);
     void disconnect();
@@ -32,7 +32,7 @@ private:
     WatchDog<StatusFrameData> m_status_data = WatchDog<StatusFrameData>(SERVER_STATUS_TIMEOUT_MS);
     QTimer m_update_timer;
     QByteArray m_cam_pic_buff;
-    // uint8_t m_cam_pic_nb_tracking;
+//    uint8_t m_cam_pic_nb_tracking;
     QImage m_image; // TMP
     void appendLog(QString);
     void updateState();

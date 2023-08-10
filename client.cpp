@@ -94,9 +94,16 @@ void Client::processFrame(ServerFrame<MAX_MSG_SIZE> frame)
     }
     case ServerFrameId::CamPic:
     {
-        QImage img=QImage::fromData(frame.getData());
-        qDebug()<<"CamPic"<< "IMG:"<<img.size();
-        emit setImage(img);
+        m_cam_pic_buff.append(frame.getData());
+
+        if (frame.getNum()==0){
+            QImage img=QImage::fromData(m_cam_pic_buff);
+            qDebug()<<"CamPic"<< "IMG:"<<img.size();
+            emit setImage(img);
+
+             m_cam_pic_buff.clear();
+        }
+
         /*m_cam_pic_buff.append(frame.getData());
 
 
@@ -321,14 +328,14 @@ void Client::readPendingDatagrams()
         // qDebug()<< datagram.data();
         QByteArray bytes= datagram.data();
         //        qDebug()<<"Recv data:"<<bytes.size();
-        m_cam_pic_buff.append(bytes);
+//        m_cam_pic_buff.append(bytes);
 
 
-        if (m_cam_pic_buff.size()==MAX_MSG_SIZE){
+//        if (m_cam_pic_buff.size()==MAX_MSG_SIZE){
             ServerFrame<MAX_MSG_SIZE> frame = ServerFrame<MAX_MSG_SIZE>(bytes);
-            // frame.debug();
+//             frame.debug();
             processFrame(frame);
-        }
+//        }
 
     }
 }

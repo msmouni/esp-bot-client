@@ -7,30 +7,31 @@
 
 // From ESP32-ROBOT project: To ADJUST LATER
 
+// ServerFrame as uint16_t frame[Length]: uint8_t ID, uint8_t FRAME_LENGTH, uint8_t FRAME_NB, uint8_t DATA[DATA_LEN]]
 // Frame definition
-const uint32_t FRAME_ID_OFFSET = 0;
-const uint32_t FRAME_LEN_OFFSET = 4;
-const uint32_t FRAME_HEADER_LEN = 6;
-const uint32_t FRAME_DATA_OFFSET = FRAME_HEADER_LEN;
+const uint8_t FRAME_ID_OFFSET = 0;
+const uint8_t FRAME_LEN_OFFSET = 1;
+const uint8_t FRAME_HEADER_LEN = 3;
+const uint8_t FRAME_DATA_OFFSET = FRAME_HEADER_LEN;
 
-// To Maybe adjust later : 32bits ...
-enum class ServerFrameId : uint32_t
+enum class ServerFrameId : uint8_t
 {
     NotDefined = 0x00,
     Authentification = 0x01,
     Status = 0x02,
     CamPic = 0x03,
     Debug = 0xFF,
-    Unknown = UINT32_MAX,
+    Unknown = UINT8_MAX,
 };
 
 // ServerFrame as uint8_t frame[Length]: [uint8_t ID[4], uint8_t FRAME_LENGTH, uint8_t DATA[DATA_LEN]]
-template <uint16_t MaxFrameLen>
+template <uint8_t MaxFrameLen>
 class ServerFrame
 {
 private:
     ServerFrameId m_id;
-    uint16_t m_len;
+    uint8_t m_len;
+    uint8_t m_num;
     QByteArray m_data;
 
 public:
@@ -42,12 +43,14 @@ public:
     {
         //        qDebug()<<"size"<<bytes_frame.size()<<"bytes"<<bytes_frame;
         // Endianness ...
-        m_id = static_cast<ServerFrameId>((uint32_t(bytes_frame[0]) << 24) | (uint32_t(bytes_frame[1]) << 16) | (uint32_t(bytes_frame[2]) << 8) | (uint32_t(bytes_frame[3])));
+        m_id = static_cast<ServerFrameId>(bytes_frame[0]);
 
-        uint16_t len = (uint32_t(bytes_frame[4]) << 8) | uint32_t(bytes_frame[5]);
+        uint8_t len = bytes_frame[1];
         m_len = std::min(len, MaxFrameLen);
 
-        m_data = bytes_frame.sliced(5, m_len);
+        m_num=bytes_frame[2];
+
+        m_data = bytes_frame.sliced(FRAME_DATA_OFFSET, m_len);
     }
 
     ServerFrame(QByteArray bytes_frame)
@@ -62,18 +65,18 @@ public:
         buffer.fill(0, MaxFrameLen);
         //        buffer.resize(MaxFrameLen);
 
-        uint32_t id_uint32 = static_cast<uint32_t>(m_id);
+//        uint32_t id_uint32 = static_cast<uint32_t>(m_id);
         // Endianness ...
-        buffer[0] = static_cast<uint8_t>(id_uint32 >> 24);
-        buffer[1] = static_cast<uint8_t>(id_uint32 >> 16);
-        buffer[2] = static_cast<uint8_t>(id_uint32 >> 8);
-        buffer[3] = static_cast<uint8_t>(id_uint32);
+        buffer[0] = static_cast<uint8_t>(m_id);
+//        buffer[1] = static_cast<uint8_t>(id_uint32 >> 16);
+//        buffer[2] = static_cast<uint8_t>(id_uint32 >> 8);
+//        buffer[3] = static_cast<uint8_t>(id_uint32);
 
-        buffer[4] = static_cast<uint8_t>(m_len >> 8);
-        buffer[5] = static_cast<uint8_t>(m_len);
+        buffer[1] = static_cast<uint8_t>(m_len);
+        buffer[2] = static_cast<uint8_t>(m_num);
 
-        buffer.remove(6, m_data.length());
-        buffer.insert(6, m_data);
+        buffer.remove(FRAME_DATA_OFFSET, m_data.length());
+        buffer.insert(FRAME_DATA_OFFSET, m_data);
 
         return buffer;
     }
@@ -102,9 +105,14 @@ public:
         return m_id;
     }
 
-    uint16_t getLen()
+    uint8_t getLen()
     {
         return m_len;
+    }
+
+    uint8_t getNum()
+    {
+        return m_num;
     }
 
     QByteArray getData()
