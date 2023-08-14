@@ -161,7 +161,7 @@ void AppWindow::updateStatus(Status status)
 
 void AppWindow::setImage(QImage image)
 {
-    qDebug() << "setImage:"<<image.size();
+//    qDebug() << "setImage:"<<image.size();
 
     ui->picView->setImage(image);
 }

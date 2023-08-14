@@ -96,9 +96,11 @@ void Client::processFrame(ServerFrame<MAX_MSG_SIZE> frame)
     {
         m_cam_pic_buff.append(frame.getData());
 
+//        qDebug()<<"nb"<<frame.getNum();
+
         if (frame.getNum()==0){
             QImage img=QImage::fromData(m_cam_pic_buff);
-            qDebug()<<"CamPic"<< "IMG:"<<img.size();
+//            qDebug()<<"CamPic"<< "IMG:"<<img.size();
             emit setImage(img);
 
              m_cam_pic_buff.clear();
@@ -266,6 +268,7 @@ void Client::socketStateChanged(QAbstractSocket::SocketState state)
     {
     case QAbstractSocket::UnconnectedState:
     {
+        m_udp_socket->close();
         appendLog("The socket is not connected.");
         m_state_handler.set(ClientState::Disconneted);
         break;
@@ -316,7 +319,7 @@ void Client::socketStateChanged(QAbstractSocket::SocketState state)
 void Client::socketError(QAbstractSocket::SocketError error)
 {
     emit hasError();
-    appendLog("Socket ERREUR : " + m_tcp_socket->errorString());
+    appendLog("Socket ERROR : " + m_tcp_socket->errorString());
 }
 
 void Client::readPendingDatagrams()

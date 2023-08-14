@@ -7,11 +7,11 @@
 
 // From ESP32-ROBOT project: To ADJUST LATER
 
-// ServerFrame as uint16_t frame[Length]: uint8_t ID, uint8_t FRAME_LENGTH, uint8_t FRAME_NB, uint8_t DATA[DATA_LEN]]
+// ServerFrame as uint16_t frame[Length]: uint8_t ID, uint8_t FRAME_LENGTH_MS, uint8_t FRAME_LENGTH_LS, uint8_t FRAME_NB, uint8_t DATA[DATA_LEN]]
 // Frame definition
 const uint8_t FRAME_ID_OFFSET = 0;
 const uint8_t FRAME_LEN_OFFSET = 1;
-const uint8_t FRAME_HEADER_LEN = 3;
+const uint8_t FRAME_HEADER_LEN = 4;
 const uint8_t FRAME_DATA_OFFSET = FRAME_HEADER_LEN;
 
 enum class ServerFrameId : uint8_t
@@ -25,18 +25,18 @@ enum class ServerFrameId : uint8_t
 };
 
 // ServerFrame as uint8_t frame[Length]: [uint8_t ID[4], uint8_t FRAME_LENGTH, uint8_t DATA[DATA_LEN]]
-template <uint8_t MaxFrameLen>
+template <uint16_t MaxFrameLen>
 class ServerFrame
 {
 private:
     ServerFrameId m_id;
-    uint8_t m_len;
+    uint16_t m_len;
     uint8_t m_num;
     QByteArray m_data;
 
 public:
     ServerFrame(){};
-    ServerFrame(ServerFrameId id, uint8_t len, QByteArray data) : m_id(id), m_len(len), m_data(data){};
+    ServerFrame(ServerFrameId id, uint16_t len, QByteArray data) : m_id(id), m_len(len), m_data(data){};
     ~ServerFrame(){};
 
     void fromBytes(QByteArray bytes_frame)
@@ -45,10 +45,10 @@ public:
         // Endianness ...
         m_id = static_cast<ServerFrameId>(bytes_frame[0]);
 
-        uint8_t len = bytes_frame[1];
+        uint16_t len = (uint16_t(bytes_frame[1])<<8) | (uint16_t(bytes_frame[2]));
         m_len = std::min(len, MaxFrameLen);
 
-        m_num=bytes_frame[2];
+        m_num=bytes_frame[3];
 
         m_data = bytes_frame.sliced(FRAME_DATA_OFFSET, m_len);
     }
@@ -72,8 +72,9 @@ public:
 //        buffer[2] = static_cast<uint8_t>(id_uint32 >> 8);
 //        buffer[3] = static_cast<uint8_t>(id_uint32);
 
-        buffer[1] = static_cast<uint8_t>(m_len);
-        buffer[2] = static_cast<uint8_t>(m_num);
+        buffer[1] = static_cast<uint8_t>(m_len>>8);
+        buffer[2] = static_cast<uint8_t>(m_len);
+        buffer[3] = static_cast<uint8_t>(m_num);
 
         buffer.remove(FRAME_DATA_OFFSET, m_data.length());
         buffer.insert(FRAME_DATA_OFFSET, m_data);
@@ -105,7 +106,7 @@ public:
         return m_id;
     }
 
-    uint8_t getLen()
+    uint16_t getLen()
     {
         return m_len;
     }
