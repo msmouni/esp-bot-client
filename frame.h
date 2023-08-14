@@ -45,7 +45,8 @@ public:
         // Endianness ...
         m_id = static_cast<ServerFrameId>(bytes_frame[0]);
 
-        uint16_t len = (uint16_t(bytes_frame[1])<<8) | (uint16_t(bytes_frame[2]));
+        uint16_t len = (uint16_t(uint8_t(bytes_frame[1]))<<8) | (uint16_t(uint8_t(bytes_frame[2])));
+//        qDebug()<<"len"<<len<<"bytes_frame[1]"<<uint16_t(bytes_frame[1])<<"bytes_frame[2]"<<uint16_t(bytes_frame[2])<<"(uint16_t(bytes_frame[1])<<8)"<<(uint16_t(bytes_frame[1])<<8)<<"(uint16_t(bytes_frame[2]))"<<(uint16_t(bytes_frame[2]));
         m_len = std::min(len, MaxFrameLen);
 
         m_num=bytes_frame[3];

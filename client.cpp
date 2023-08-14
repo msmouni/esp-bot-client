@@ -60,10 +60,17 @@ void Client::disconnect()
     m_tcp_socket->disconnectFromHost();
 }
 
-void Client::sendFrame(QByteArray frame)
+void Client::sendTcpFrame(QByteArray frame)
 {
     m_tcp_socket->write(frame);
     //    m_tcp_socket->waitForBytesWritten()
+}
+
+void Client::sendUdpFrame(QByteArray frame)
+{
+    if (m_state_handler.isConnected()){
+        m_udp_socket->write(frame);
+    }
 }
 
 void Client::appendLog(QString txt)
@@ -71,7 +78,8 @@ void Client::appendLog(QString txt)
     emit appendLogSig("Client: " + txt);
 }
 
-void Client::processFrame(ServerFrame<MAX_MSG_SIZE> frame)
+template <uint16_t MaxFrameLen>
+void Client::processFrame(ServerFrame<MaxFrameLen> frame)
 {
     /*
     Authentification = 0x01,
@@ -99,6 +107,7 @@ void Client::processFrame(ServerFrame<MAX_MSG_SIZE> frame)
 //        qDebug()<<"nb"<<frame.getNum();
 
         if (frame.getNum()==0){
+//            qDebug()<<"data_size"<<m_cam_pic_buff.length();
             QImage img=QImage::fromData(m_cam_pic_buff);
 //            qDebug()<<"CamPic"<< "IMG:"<<img.size();
             emit setImage(img);
@@ -208,7 +217,7 @@ void Client::streamDataReceived()
 
     QByteArray bytes = m_tcp_socket->readAll();
 
-    processFrame(ServerFrame<MAX_MSG_SIZE>(bytes));
+    processFrame(ServerFrame<MAX_TCP_MSG_SIZE>(bytes));
 
     // https://stackoverflow.com/questions/35419786/stop-tcp-packets-from-concatenating
 
@@ -330,12 +339,13 @@ void Client::readPendingDatagrams()
         //        processTheDatagram(datagram);
         // qDebug()<< datagram.data();
         QByteArray bytes= datagram.data();
-        //        qDebug()<<"Recv data:"<<bytes.size();
+//                qDebug()<<"Recv data:"<<bytes.size();
 //        m_cam_pic_buff.append(bytes);
 
 
 //        if (m_cam_pic_buff.size()==MAX_MSG_SIZE){
-            ServerFrame<MAX_MSG_SIZE> frame = ServerFrame<MAX_MSG_SIZE>(bytes);
+            ServerFrame<MAX_UDP_MSG_SIZE> frame = ServerFrame<MAX_UDP_MSG_SIZE>(bytes);
+//        qDebug()<<"Recv data:"<<bytes.size()<<"|frame_data:"<<frame.getLen()<<"nb:"<<frame.getNum();
 //             frame.debug();
             processFrame(frame);
 //        }
@@ -366,22 +376,22 @@ void Client::tryLogIn(QString login, QString password)
 
     //    qDebug() << auth_frame;
 
-    QByteArray frame = ServerFrame<MAX_MSG_SIZE>(ServerFrameId::Authentification, auth_frame.size(), auth_frame).toBytes();
+    QByteArray frame = ServerFrame<MAX_TCP_MSG_SIZE>(ServerFrameId::Authentification, auth_frame.size(), auth_frame).toBytes();
 
     //    // TMP
     //    qDebug() << frame;
 
-    sendFrame(frame);
+    sendTcpFrame(frame);
 }
 
 void Client::logout()
 {
     QByteArray auth_frame = AuthFrameData(AuthentificationRequest::LogOut, QByteArray()).toBytes();
 
-    QByteArray frame = ServerFrame<MAX_MSG_SIZE>(ServerFrameId::Authentification, auth_frame.size(), auth_frame).toBytes();
+    QByteArray frame = ServerFrame<MAX_TCP_MSG_SIZE>(ServerFrameId::Authentification, auth_frame.size(), auth_frame).toBytes();
 
     //    // TMP
     //    qDebug() << frame;
 
-    sendFrame(frame);
+    sendTcpFrame(frame);
 }
