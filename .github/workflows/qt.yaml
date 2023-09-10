@@ -1,0 +1,38 @@
+name: Qt CMake Action
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+    - name: Installing Qt
+      # https://github.com/jurplel/install-qt-action
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.5.2'
+        host: 'linux'
+        target: 'desktop'
+        arch: 'gcc_64'
+        # For example, if you set dir to ${{ github.workspace }}/example/, your bin folder will be located at $GITHUB_WORKSPACE/example/Qt/5.15.2/{arch}/bin
+        dir: '${{ github.workspace }}/Qt_install/'
+    
+    - name: Generating Build Files
+      run: mkdir build; cd build; cmake -DCMAKE_PREFIX_PATH="$GITHUB_WORKSPACE/Qt_install/Qt/6.5.2/gcc_64/lib/cmake" ..
+
+    - name: Building
+      run: cd build; make
+    
+    - name: Cleaning
+      # maybe deploy artifact later ...
+      run: echo "Cleaning build directory ..."; rm -r build
