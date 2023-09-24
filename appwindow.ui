@@ -17,7 +17,7 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>0</number>
+      <number>2</number>
      </property>
      <widget class="QWidget" name="connexionTab">
       <attribute name="title">
@@ -567,6 +567,17 @@
       <attribute name="title">
        <string>Control</string>
       </attribute>
+      <widget class="QWidget" name="verticalLayoutWidget">
+       <property name="geometry">
+        <rect>
+         <x>70</x>
+         <y>140</y>
+         <width>241</width>
+         <height>221</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_9"/>
+      </widget>
      </widget>
      <widget class="QWidget" name="statusTab">
       <attribute name="title">

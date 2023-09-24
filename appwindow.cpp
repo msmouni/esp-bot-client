@@ -5,7 +5,9 @@ AppWindow::AppWindow(QWidget *parent)
     : QWidget(parent), ui(new Ui::AppWindow)
 {
     m_client = new Client(this);
+    m_send_timer= new QTimer(this);
 
+    // Adjust Gui ///////////////////////////////////////////
     ui->setupUi(this);
     ui->picView->setScene(&scene);
 
@@ -18,8 +20,27 @@ AppWindow::AppWindow(QWidget *parent)
     ui->ipValIn->setEnabled(false);
     ui->portValIn->setEnabled(false);
 
+    QHBoxLayout *picViewLayout = new QHBoxLayout(ui->picView);
+    ui->picView->setLayout(picViewLayout);
+
+    // Joystick
+    m_joystick = new Joystick(ui->picView);
+    m_joystick->setMinimumSize(100, 100);
+
+    QVBoxLayout *joystickLayout = new QVBoxLayout(nullptr);
+
+    joystickLayout->addSpacerItem(new QSpacerItem(1, 1, QSizePolicy::Minimum, QSizePolicy::MinimumExpanding));
+    joystickLayout->addWidget(m_joystick);
+
+    picViewLayout->addSpacerItem(new QSpacerItem(1, 1, QSizePolicy::MinimumExpanding, QSizePolicy::Minimum));
+    picViewLayout->addLayout(joystickLayout);
+    picViewLayout->addSpacerItem(new QSpacerItem(1, 1, QSizePolicy::MinimumExpanding, QSizePolicy::Minimum));
+
+    m_joystick->setEnabled(false);
+
     ui->stackedWidget->setCurrentWidget(ui->connexionPage);
 
+    // Connect signals ///////////////////////////////////////////
     connect(ui->connexionButton, SIGNAL(clicked()), this, SLOT(connexionButtonPushed()));
     connect(ui->wifiConfigComboBox, SIGNAL(activated(int)), this, SLOT(wifiConfigChanged(int)));
     connect(ui->hidePasswordCheckBox, SIGNAL(stateChanged(int)), this, SLOT(hidePassword(int)));
@@ -30,6 +51,11 @@ AppWindow::AppWindow(QWidget *parent)
     connect(m_client, SIGNAL(hasError()), this, SLOT(clientError()));
     connect(m_client, SIGNAL(updateStatus(Status)), this, SLOT(updateStatus(Status)));
     connect(m_client, SIGNAL(setImage(QImage)), this, SLOT(setImage(QImage)));
+
+    connect(m_joystick, SIGNAL(xChanged(float)), this, SLOT(joystickXchanged(float)));
+    connect(m_joystick, SIGNAL(yChanged(float)), this, SLOT(joystickYchanged(float)));
+
+    connect(m_send_timer, SIGNAL(timeout()), this, SLOT(sendControlFrame()));
 
     appendLog("Client Created");
 }
@@ -54,6 +80,22 @@ void AppWindow::updateState(Status status)
         ui->loginValIn->setEnabled(false);
         ui->passwordValIn->setEnabled(false);
         ui->loginButton->setText("Log Out");
+
+        // TODO: factorize
+        if (status.m_client_state == ClientState::AuthAsSuperCLient)
+        {
+//            appendLog("Client is taking control");
+            m_joystick->setEnabled(true);
+            if (!m_send_timer->isActive()){
+                        m_send_timer->start(M_SEND_TIMER_PERIOD_MS);
+            }
+        }else {
+            m_joystick->setEnabled(false);
+            if (m_send_timer->isActive()){
+                m_send_timer->stop();
+            }
+
+        }
     }
     else
     {
@@ -62,6 +104,11 @@ void AppWindow::updateState(Status status)
         ui->passwordValIn->setEnabled(true);
         ui->hidePasswordCheckBox->setEnabled(true);
         ui->loginButton->setText("Log In");
+
+        m_joystick->setEnabled(false);
+        if (m_send_timer->isActive()){
+            m_send_timer->stop();
+        }
     }
 }
 
@@ -155,6 +202,24 @@ void AppWindow::setImage(QImage image)
     //    qDebug() << "setImage:"<<image.size();
 
     ui->picView->setImage(image);
+}
+
+void AppWindow::joystickXchanged(float x)
+{
+//    qDebug() << "x" << x;
+    m_joystick_x = x;
+}
+
+void AppWindow::joystickYchanged(float y)
+{
+//    qDebug() << "y" << y;
+    m_joystick_y = y;
+}
+
+void AppWindow::sendControlFrame()
+{
+    // TODO: SEND joystick (X, Y)
+    qDebug() << "(" << m_joystick_x <<", "<<m_joystick_y<<")";
 }
 
 void AppWindow::connexionButtonPushed()

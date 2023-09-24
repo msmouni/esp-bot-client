@@ -28,6 +28,8 @@ set(PROJECT_SOURCES
         status.h
         picviewer.cpp
         picviewer.h
+        joystick.h
+        joystick.cpp
         appwindow.ui
 )
 
@@ -38,6 +40,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(esp-bot-client
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
+        joystick.h joystick.cpp
+        images/joystick_background.png images/joystick_handle.png
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET esp-bot-client APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

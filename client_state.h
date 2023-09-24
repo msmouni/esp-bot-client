@@ -41,6 +41,11 @@ struct ClientStateHandler
     {
         return (m_state == ClientState::AuthAsCLient || m_state == ClientState::AuthAsSuperCLient);
     }
+
+    bool isTakingControl()
+    {
+        return (m_state == ClientState::AuthAsSuperCLient);
+    }
 };
 
 #endif // CLIENT_STATE_H

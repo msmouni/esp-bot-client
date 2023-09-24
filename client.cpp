@@ -111,12 +111,12 @@ void Client::updateState()
         {
         case AuthentificationType::AsClient:
         {
-            m_state_handler.set(ClientState::AuthAsSuperCLient);
+            m_state_handler.set(ClientState::AuthAsCLient);
             break;
         }
         case AuthentificationType::AsSuperClient:
         {
-            m_state_handler.set(ClientState::AuthAsCLient);
+            m_state_handler.set(ClientState::AuthAsSuperCLient);
             break;
         }
         default:
