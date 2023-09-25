@@ -17,7 +17,7 @@ class Client : public QObject
 public:
     explicit Client(QObject *parent = nullptr);
 
-    static const uint16_t MAX_TCP_MSG_SIZE = 128; // To adjust later reg Msgs to send
+    static const uint16_t MAX_TCP_MSG_SIZE = 128; // To adjust later reg Msgs to send // TODO: Rename
     static const uint16_t MAX_UDP_MSG_SIZE = 1024;
 
     void tryToConnect(QString server_ip, quint16 server_port);

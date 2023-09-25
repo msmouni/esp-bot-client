@@ -220,6 +220,12 @@ void AppWindow::sendControlFrame()
 {
     // TODO: SEND joystick (X, Y)
     qDebug() << "(" << m_joystick_x <<", "<<m_joystick_y<<")";
+
+    QByteArray control_frame_data = ControlFrameData(m_joystick_x, m_joystick_y).toBytes();
+
+    QByteArray frame = ServerFrame<Client::MAX_TCP_MSG_SIZE>(ServerFrameId::Control, control_frame_data.size(), control_frame_data).toBytes();
+
+    m_client->sendUdpFrame(frame);
 }
 
 void AppWindow::connexionButtonPushed()

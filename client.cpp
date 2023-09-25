@@ -39,7 +39,9 @@ void Client::sendUdpFrame(QByteArray frame)
 {
     if (m_state_handler.isConnected())
     {
+        qDebug() << "Check";
         m_udp_socket->write(frame);
+//        m_udp_socket->o
     }
 }
 
@@ -169,6 +171,7 @@ void Client::socketStateChanged(QAbstractSocket::SocketState state)
         appendLog("A connection is established: (IP:" + m_tcp_socket->localAddress().toString() + ", Port:" + QString::number(m_tcp_socket->localPort()) + ")");
 
         m_udp_socket->bind(m_tcp_socket->localAddress(), m_tcp_socket->localPort());
+        m_udp_socket->connectToHost(m_tcp_socket->peerAddress(), m_tcp_socket->peerPort());
 
         m_state_handler.set(ClientState::Connected);
         break;

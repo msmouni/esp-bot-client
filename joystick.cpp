@@ -292,7 +292,7 @@ void Joystick::paintEvent(QPaintEvent *event)
         return;
 
     gradient = QRadialGradient(m_knopBounds.center(), m_knopBounds.width() / 2, m_knopBounds.center());
-    gradient.setColorAt(0, QColor(70, 70, 70,200));//Qt::gray);
+    gradient.setColorAt(0, QColor(90, 90, 90,200));//Qt::gray);
     gradient.setColorAt(1, QColor(50, 50, 50,200));//Qt::darkGray);
     gradient.setFocalRadius(m_knopBounds.width() * 0.2);
     gradient.setCenterRadius(m_knopBounds.width() * 0.5);

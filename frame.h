@@ -20,6 +20,7 @@ enum class ServerFrameId : uint8_t
     Authentification = 0x01,
     Status = 0x02,
     CamPic = 0x03,
+    Control = 0x04,
     Debug = 0xFF,
     Unknown = UINT8_MAX,
 };
@@ -37,6 +38,7 @@ private:
 public:
     ServerFrame(){};
     ServerFrame(ServerFrameId id, uint16_t len, QByteArray data) : m_id(id), m_len(len), m_data(data){};
+    ServerFrame(ServerFrameId id, uint16_t len, uint8_t num, QByteArray data) : m_id(id), m_len(len), m_data(data){};
     ~ServerFrame(){};
 
     void fromBytes(QByteArray bytes_frame)
@@ -200,6 +202,36 @@ struct StatusFrameData
     {
         QByteArray bytes;
         bytes.append((uint8_t)m_auth_type);
+
+        return bytes;
+    }
+};
+////////////////////////////////////////////////////////////
+struct ControlFrameData
+{
+    float m_joystick_x; // -1..1
+    float m_joystick_y; // -1..1
+
+    ControlFrameData(QByteArray bytes)
+    {
+        m_joystick_x = (((float)(bytes[0])) -127)/127 ; // 0..2
+        m_joystick_y = (((float)(bytes[1])) -127)/127 ; // 0..2
+
+        // bytes++;
+    }
+
+    ControlFrameData(float joystick_x,float joystick_y)
+    {
+        m_joystick_x = joystick_x;
+        m_joystick_y = joystick_y;
+    }
+
+    QByteArray toBytes()
+    {
+        QByteArray bytes;
+
+        bytes.append((uint8_t)((1+m_joystick_x)*127)); // 0..254
+        bytes.append((uint8_t)((1+m_joystick_y)*127)); // 0..254
 
         return bytes;
     }
